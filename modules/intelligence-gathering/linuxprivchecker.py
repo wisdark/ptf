@@ -1,33 +1,32 @@
 #!/usr/bin/env python
 #####################################
-# Installation module for DNSRecon
+# Installation module for linuxprivchecker 
 #####################################
 
 # AUTHOR OF MODULE NAME
-AUTHOR="Greg Hetrick (gchetrick)"
+AUTHOR="spinfoo"
 
 # DESCRIPTION OF THE MODULE
-DESCRIPTION="This module will install/update dnsrecon - a dns enum tool by Carlos Parez"
+DESCRIPTION="This module will install/update linuxprivchecker - Linux Privilege Escalation Check Script" 
 
 # INSTALL TYPE GIT, SVN, FILE DOWNLOAD
 # OPTIONS = GIT, SVN, FILE
 INSTALL_TYPE="GIT"
 
 # LOCATION OF THE FILE OR GIT/SVN REPOSITORY
-REPOSITORY_LOCATION="https://github.com/darkoperator/dnsrecon"
+REPOSITORY_LOCATION="https://github.com/sleventyeleven/linuxprivchecker.git"
 
 # WHERE DO YOU WANT TO INSTALL IT
-INSTALL_LOCATION="dnsrecon"
+INSTALL_LOCATION="linuxprivchecker"
 
 # DEPENDS FOR DEBIAN INSTALLS
-DEBIAN="git,python-pip"
+DEBIAN="git python"
 
 # DEPENDS FOR FEDORA INSTALLS
-FEDORA="git,python-pip"
+FEDORA="git,python"
 
 # COMMANDS TO RUN AFTER
-AFTER_COMMANDS="cd {INSTALL_LOCATION},pip install -r requirements.txt"
+AFTER_COMMANDS=""
 
-# CREATE LAUNCHER
-LAUNCHER="dnsrecon"
-
+# create launcher
+LAUNCHER="linuxprivchecker"
