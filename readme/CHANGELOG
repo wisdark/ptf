@@ -1,4 +1,78 @@
 ~~~~~~~~~~~~~~~~~
+2.3.7
+~~~~~~~~~~~~~~~~~
+
+* commit PR changes for new tools and fixes
+* fixed kerbrute installer and moved location to exploitation
+
+~~~~~~~~~~~~~~~~~
+2.3.6
+~~~~~~~~~~~~~~~~~
+
+* add 15 new tools
+
+~~~~~~~~~~~~~~~~~
+2.3.5
+~~~~~~~~~~~~~~~~~
+
+* added unlock - applocker evasion tool (pr theguly)
+* fix for ptf --update-installed (thanks spoonman!! lawry)
+* remove --force-yes to allow-downgrades --allow-remove-essential (thanks skapunker)
+* add install_update_all to each category so you can install directly from each module section vsd everything
+
+~~~~~~~~~~~~~~~~~
+2.3.4
+~~~~~~~~~~~~~~~~~
+
+* move trevorc2 to python3
+* move ptf loader to python3
+
+~~~~~~~~~~~~~~~~~
+2.3.3
+~~~~~~~~~~~~~~~~~
+
+* commit the tools, oops
+
+~~~~~~~~~~~~~~~~~
+version 2.3.2
+~~~~~~~~~~~~~~~~~
+
+* fix error on show modules for modules/custom_list/list
+* fix error when using show options inside module it would install depends by typing show options
+* add spoofcheck
+* add bloodhound-python
+* add ldapdpomaindump
+* add ldapper
+* add kerberoast
+* add pcredz
+* add awsbucketdump
+* add pacu 
+
+~~~~~~~~~~~~~~~~~
+version 2.3.1
+~~~~~~~~~~~~~~~~~
+
+* added a check for pexpect
+* added requirements.txt for pexpect
+
+~~~~~~~~~~~~~~~~~
+version 2.3
+~~~~~~~~~~~~~~~~~
+
+* added support for gitlab (pr)
+* added support for custom tool installations based on modules (pr)
+* added rdp scanner (pr)
+* nosqlmap depend fix
+* nmap depend fix
+* added new tool unicorscan
+* added new tool oracle assessment framework
+* added SSH-Audit launcher
+* added new tool Dirb
+* added new tool soapui
+* added new tool postman
+ 
+
+~~~~~~~~~~~~~~~~~
 version 2.2
 ~~~~~~~~~~~~~~~~~
 

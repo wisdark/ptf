@@ -1,23 +1,26 @@
 #!/usr/bin/env python
 #####################################
-# Installation module for SSH-audit
+# Installation module for Unlock
 #####################################
 
 # AUTHOR OF MODULE NAME
-AUTHOR="Steven van der Baan (vdbaan)"
+AUTHOR="Sandro 'guly' Zaccarini"
 
 # DESCRIPTION OF THE MODULE
-DESCRIPTION="ssh-audit is a tool for ssh server auditing."
+DESCRIPTION="This module will install/update unlock - Microsoft Applocker evasion tool"
 
 # INSTALL TYPE GIT, SVN, FILE DOWNLOAD
-# OPTIONS = GIT, SVN, FILE
-INSTALL_TYPE="GIT"
+# OPTIONS = GIT, SVN, FILE ,wget
+INSTALL_TYPE="git"
 
 # LOCATION OF THE FILE OR GIT/SVN REPOSITORY
-REPOSITORY_LOCATION="https://github.com/arthepsy/ssh-audit.git"
+REPOSITORY_LOCATION="https://github.com/freshness79/unlock"
 
 # WHERE DO YOU WANT TO INSTALL IT
-INSTALL_LOCATION="ssh-audit"
+INSTALL_LOCATION="unlock"
+
+#not github program manual update of the link needed
+BYPASS_UPDATE="NO"
 
 # DEPENDS FOR DEBIAN INSTALLS
 DEBIAN="git"
@@ -28,6 +31,4 @@ FEDORA="git"
 # COMMANDS TO RUN AFTER
 AFTER_COMMANDS=""
 
-# CREATE LAUNCHER
-LAUNCHER="ssh-audit"
-
+LAUNCHER="unlock"

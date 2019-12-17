@@ -1,36 +1,34 @@
 #!/usr/bin/env python
 #####################################
-# Installation module for TrevorC2
+# Installation module for SpoofCheck
 #####################################
 
-# AUTHOR OF MODULE NAME
-AUTHOR="David Kennedy (ReL1K)"
-
 # DESCRIPTION OF THE MODULE
-DESCRIPTION="This module will install/update TrevorC2 - a native command and control over HTTP(s)"
+DESCRIPTION="This module will install/update spoofcheck a script that checks a domain for email protections"
+
+AUTHOR="Andrew Schwartz"
 
 # INSTALL TYPE GIT, SVN, FILE DOWNLOAD
 # OPTIONS = GIT, SVN, FILE
 INSTALL_TYPE="GIT"
 
 # LOCATION OF THE FILE OR GIT/SVN REPOSITORY
-REPOSITORY_LOCATION="https://github.com/trustedsec/trevorc2"
+REPOSITORY_LOCATION="https://github.com/BishopFox/spoofcheck.git"
 
 # WHERE DO YOU WANT TO INSTALL IT
-INSTALL_LOCATION="trevorc2"
+INSTALL_LOCATION="spoofcheck"
 
 # DEPENDS FOR DEBIAN INSTALLS
-DEBIAN="git, python3-pip"
+DEBIAN="git,python-pip"
 
 # DEPENDS FOR FEDORA INSTALLS
-FEDORA="git"
+FEDORA="git,python-pip"
 
 # COMMANDS TO RUN AFTER
-AFTER_COMMANDS="cd {INSTALL_LOCATION},python3 -m pip install -r requirements.txt"
+AFTER_COMMANDS="cd {INSTALL_LOCATION},pip install -r requirements.txt"
 
 # THIS WILL CREATE AN AUTOMATIC LAUNCHER FOR THE TOOL
-LAUNCHER=""
+LAUNCHER="spoofcheck"
 
 # PREREQ INSTALL MODULES NEEDED FOR THIS TOOL TO WORK PROPERLY
 TOOL_DEPEND=""
-
