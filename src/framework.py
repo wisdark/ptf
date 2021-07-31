@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # PTF Main framework look and feel
 #
@@ -10,21 +11,25 @@ import readline
 import os
 import time
 import getpass
-
+from src.ptflogger import info, error, log
 try: 
     import pexpect
     pexpect_check = 1
 except: 
     print("[!] python-pexpect not installed, gitlab will not work")
-    print("[!] Run pip install python-pexpect to install pexpect for gitlab support.")
+    print("[!] Run pip install pexpect to install pexpect for gitlab support.")
     pexpect_check = 0
 
 # python 2 compatibility
 try: input = raw_input
 except NameError: pass
 
-# print the main welcome banner
-print (banner)
+# If user does not want the awesome banner, do not print it out
+if '-nb' in sys.argv or '--no-banner' in sys.argv:
+    pass
+else:
+    # print the main welcome banner
+    print (banner)
 
 # funny random banner
 import random
@@ -151,13 +156,13 @@ def show_module():
                 # shorten it up a little bit
                 filename_short = filename.replace(os.getcwd() + "/", "")
                 filename_short = filename_short.replace(".py", "")
+                filename_short = filename_short.replace(".txt", "")
                 filename_short = str(filename_short)
                 description = module_parser(filename, "DESCRIPTION")
                 # print the module name
                 if description != None:
                     temp_number = 53 - len(filename_short)
-                    print(
-                        "   " + filename_short + " " * temp_number + description)
+                    print("   " + filename_short + " " * temp_number + description)
     print("\n")
 
 def show_new_modules():
@@ -166,16 +171,13 @@ def show_new_modules():
         for name in sorted(files):
             filename = os.path.join(path, name)
             if not name in ('__init__.py', 'install_update_all.py', 'update_installed.py'):
-                filename_short = filename.replace(os.getcwd() +"/","")
-                filename_short = filename_short.replace(".py","")
-                filename_short = str(filename_short)
+                module = filename_to_module(filename)
                 description = module_parser(filename, "DESCRIPTION")
                 location = module_parser(filename,"INSTALL_LOCATION")
                 if not ((location is None) or (os.path.exists(os.path.join(path.replace("ptf/modules/",""), location)))):
                     if description != None:
-                        temp_number = 53 - len(filename_short)
-                        print(
-                            "   " + filename_short + " " * temp_number + description)
+                        temp_number = 53 - len(module)
+                        print("   " + module + " " * temp_number + description)
     print("\n")
 
 # this is here if you need to access to a gitlab with a password for your keyphrase
@@ -186,52 +188,100 @@ def get_password_gitlab():
     if password_gitlab == "":
         password_gitlab = getpass.getpass('Enter passphrase for Gitlab modules key (let blank if no passphrase) : ')
 
+def discover_module_filename(module):
+    SPECIAL_MODULE_NAMES = ("install_update_all", "update_installed", "custom_list", "__init__",)
+    module_suffix = ".txt" if "custom_list" in module else ".py"
+
+    # is module already a path?
+    if '/' in module or any(map(module.__contains__, SPECIAL_MODULE_NAMES)):
+        return definepath() + "/" + module + module_suffix
+
+    # find module
+    modules_path = os.getcwd() + "/modules/"
+    for path, subdirs, files in os.walk(modules_path):
+        for name in sorted(files):
+            if name in ('__init__.py', 'install_update_all.py', 'update_installed.py'):
+                continue
+            name_short = name.replace(".py","")
+            if name_short == module:
+                return os.path.join(path, name)
+
+    raise Exception("module not found")
+
+def filename_to_module(filename):
+    module = filename.replace(os.getcwd() + "/", "").replace(".py","")
+    module = module.replace(os.getcwd() + "/", "").replace(".txt", "")
+    return str(module)
+
 # this is when a use <module> command is initiated
 def use_module(module, all_trigger):
     prompt = ("")
     # if we aren't using all
     if not "install_update_all" in module and not "update_installed" in module and not "__init__" in module and not "custom_list" in module:
-
         # set terminal title
         set_title("ptf - %s" % module)
-
         # if we are using a normal module
         if int(all_trigger) == 0 or int(all_trigger) == 1 or int(all_trigger) == 2:
-            filename = definepath() + "/" + module + ".py"
-
+            filename = discover_module_filename(module)
+            module = filename_to_module(filename)
             # grab the author
             try:
                 author = module_parser(filename, "AUTHOR")
-
             except TypeError:
                 author = "Invalid"
-
             # grab the description
             description = module_parser(filename, "DESCRIPTION")
-
             # grab install type
             install_type = module_parser(filename, "INSTALL_TYPE")
-
             # if were are tool depends for other modules prior to install
             tool_depend = module_parser(filename, "TOOL_DEPEND")
+            # Since unicorn requires metasploit to be installed in order to generate the payloads,
+            # by default PTF will install or update metasploit.
+            # Here it will ask what the user wants to do for if they already have msf installed
+            # If they do, it will skip, else it will install
+            if 'metasploit' in tool_depend and 'unicorn' in module:
+                print_warning("Unicorn requires Metasploit Framework to be installed.")
+                # Check if metasploit is installed
+                if os.path.isdir("/opt/metasploit-framework/") or os.path.isdir("/usr/share/metasploit-framework/"):
+                    print_info("Seems like you have Metasploit Framework already installed")
+                    install_unicorn = input("Do you want to update metasploit? (y/n) (default is yes) ").lower()
+                    # Do we want to update metasploit now or later
+                    # If yes, then this will run as this part never existed
+                    if install_unicorn == 'y':
+                        print_info("Once you enter run, update, install or upgrade I will install metasploit for you")
+                        pass
+                    # If we do not want to update, then it will skip metasploit update
+                    elif install_unicorn == 'n':
+                        print_info("Skipping metasploit installation/update")
+                        tool_depend = ""
+                    else:
+						# If we enter anything but 'y' or 'n', it will continue like normal
+                        print_info("No input detected. I will continue as normal and update metasploit")
+                        pass
+                else:
+					# If metasploit is not installed, then we will run as this part never existed
+                    print_warning("Metasploit Framework is NOT installed. Therefore, I will install it for you")
+                    pass
+            else:
+                 pass
             # if the module path is wrong, throw a warning
-            if not os.path.isfile(tool_depend + ".py"):
-                if len(tool_depend) > 1: print_warning("Tool depend: " + tool_depend + " not found. Ensure the module is pointing to a module location.")
+            try:
+                if not os.path.isfile(tool_depend + ".py"):
+                    if len(tool_depend) > 1: print_warning("Tool depend: " + tool_depend + " not found. Ensure the module is pointing to a module location.")
+            except TypeError: pass
 
             # grab repository location
             repository_location = module_parser(filename, "REPOSITORY_LOCATION")
 
             # custom work for zaproxy
-            if "zaproxy" in repository_location:
-                repository_location = zaproxy()
+            if "zaproxy" in repository_location: repository_location = zaproxy()
 
             # here we check if we need to do x86 or x64
             if module_parser(filename, "X64_LOCATION") != "":
                 # grab architecture
                 arch_detect = arch()
                 if "64bit" in arch_detect:
-                    repository_location = module_parser(
-                        filename, "X64_LOCATION")
+                    repository_location = module_parser(filename, "X64_LOCATION")
 
             # grab install path
             base_install = check_config("BASE_INSTALL_PATH=")
@@ -246,9 +296,7 @@ def use_module(module, all_trigger):
                 # Default to True
                 organize_dirs = True
 
-            if bool(organize_dirs) == True:
-                install_location = os.path.expanduser(base_install + "/" + \
-                    module_split + "/" + install_base_location + "/")
+            if bool(organize_dirs) == True: install_location = os.path.expanduser(base_install + "/" + module_split + "/" + install_base_location + "/")
             else:
                 install_location = base_install + "/" + install_base_location + "/"
 
@@ -259,7 +307,10 @@ def use_module(module, all_trigger):
             if int(all_trigger) == 0:
                 try:
                     prompt = input(bcolors.BOLD + "ptf:" + bcolors.ENDC + "(" + bcolors.RED + "%s" % module + bcolors.ENDC + ")>")
-                except EOFError:
+                    info("Options after module has been chosen")
+                    info(prompt)
+                except EOFError as eof:
+                    error(eof)
                     prompt = "back"
                     print("")
 
@@ -278,17 +329,27 @@ def use_module(module, all_trigger):
                 if "use " in prompt:
                     return prompt
 
-                # if we are searching for something
-                if "search " in prompt:
-                    search(prompt)
-
                 # options menu - was a choice here to load upon initial load of dynamically pull each time
                 # if changes are made, it makes sense to keep it loading each time
-                if prompt.lower() == "show options":
-                    print("Module options (%s):" % module)
+                #if prompt.lower() == "show options":
+                #    print("Module options (%s):" % module)
+
+                # if we are searching for something
+                if "search " in prompt:
+                    if search(prompt):
+                        prompt("")
+
+                #if "show " in prompt:
+                #    prompt = split("/","")[1]
+                #    search(prompt)
+
+                if prompt == "" or len(prompt) < 1:
+                    print("[*] No prompt given, type help, back, show options, or run to proceed.")
+                    #prompt(back)
 
                 # if we are using a normal module
                 if module != "modules/install_update_all":
+                  if "show options" in prompt:
 
                     print("\n\n")
                     print(bcolors.BOLD + "Module Author:         " + bcolors.ENDC + author)
@@ -343,13 +404,26 @@ def use_module(module, all_trigger):
                 check_blank_dir(install_location)
 
                 if os.path.isdir(install_location):
-                    print_status(
-                        "Detected installation already. Going to upgrade for you.")
+                    print_status("Detected installation already. Going to upgrade for you.")
                     prompt = "update"
                 else:
-                    print_status(
-                        "Tool not installed yet, will run through install routine")
+                    print_status("Tool not installed yet, will run through install routine")
                     prompt = "install"
+
+            def log_output():
+                # Log proc output into the log file
+                def check_io():
+                    output = ""
+                    while True:
+                        output = proc.stdout.readline().decode()
+                        output = output.replace("\n","")
+                        if output:
+                            info(output)
+                        else:
+                            break
+                    if output != "":
+                        while proc.poll() is None:
+                            check_io()
 
             # check to see if we need to bypass after commands for certain
             # files - this is needed when using FILE and others where after
@@ -357,7 +431,6 @@ def use_module(module, all_trigger):
             if module_parser(filename, "BYPASS_UPDATE") == "YES":
                 if prompt.lower() == "update":
                     prompt = "install"
-
             # if we are updating the tools
             if prompt.lower() == "update" or prompt.lower() == "upgrade":
                 # if we are using ignore modules then don't process
@@ -365,25 +438,29 @@ def use_module(module, all_trigger):
                     # move to the location
                     if os.path.isdir(install_location):
                         if install_type.lower() == "git":
-                            print_status("Updating the tool, be patient while git pull is initiated.")
-                            subprocess.Popen("cd %s;git pull" % (install_location), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
-
+                            msg = "Updating %s , be patient while git pull is initiated" % module
+                            print_status(msg)
+                            info(msg)
+                            proc = subprocess.Popen("cd %s;git pull" % (install_location), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            log_output()
                             # check launcher
                             launcher(filename, install_location)
-
                             # here we check to see if we need anything we need to
                             # run after things are updated
                             update_counter = 0
                             if not "Already up-to-date." in proc.communicate():
                                 after_commands(filename, install_location)
                                 update_counter = 1
-                            else: print_status("Tool already up-to-date!")
-                            print_status("Finished Installing! Enjoy the tool installed under: " + (install_location))
-
+                            else: 
+                                print_status("Tool already up-to-date!")
+                                log("Tool already up-to-date")
+                            
+                            msg = "Finished Installing! Enjoy the tool installed under: " + install_location
+                            print_status(msg)
+                            log(msg)
                             # run after commands
                             if update_counter == 0:
                                     after_commands(filename, install_location)
-
                         if install_type.lower() == "gitlab":
                            if pexpect_check == 0:
                                 print("[!] You can't use gitlab features unless you install pexpect. Please install pexpect in order to use these features. Install option: pip install python-pexpect.")
@@ -394,10 +471,8 @@ def use_module(module, all_trigger):
                             proc.expect('passphrase')
                             proc.sendline('%s' % password_gitlab)
                             proc.expect(pexpect.EOF)
-
                             # check launcher
                             launcher(filename, install_location)
-
                             # here we check to see if we need anything we need to
                             # run after things are updated
                             update_counter = 0
@@ -408,11 +483,9 @@ def use_module(module, all_trigger):
                             elif i == 0:
                                 print_status("Tool already up-to-date!")
                             print_status("Finished Installing! Enjoy the tool installed under: " + (install_location))
-
                             # run after commands
                             if update_counter == 0:
                                     after_commands(filename, install_location)
-
                         if install_type.lower() == "svn":
                             print_status("Updating the tool, be patient while svn pull is initiated.")
                             proc = subprocess.Popen("cd %s;svn update" % (install_location), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -423,7 +496,6 @@ def use_module(module, all_trigger):
                                     filewrite = open(install_location + "/.goatsvn_storage", "w")
                                     filewrite.write(proc.communicate()[0])
                                     filewrite.close()
-
                                 if os.path.isfile(install_location + "/.goatsvn_storage"):
                                     cmp = open(install_location +
                                                "/.goatsvn_storage", "r").read()
@@ -439,78 +511,73 @@ def use_module(module, all_trigger):
                             print_status("Finished Installing! Enjoy the tool installed under: " + (install_location))
                             # check launcher
                             launcher(filename, install_location)
-
                             # run after commands
                             if prompt != "update": after_commands(filename, install_location)
-
                         print_status("Running updatedb to tidy everything up.")
                         subprocess.Popen("updatedb", shell=True).wait()
-
                     if not os.path.isdir(install_location):
                         print_error("The tool was not found in the install location. Try running install first!")
-
             # if we want to install it
             if prompt.lower() == "install":
                 # if we are using ignore modules then don't process
                 if not "__init__.py" in filename and not ignore_module(filename):
-
                     # grab the OS type, DEBIAN, FEDORA, CUSTOM, BSD!!!! WOW!!,
                     ostype = profile_os()
+                    # Global msg for below preparing dependencies for module
+                    msg_prep_dpns = "Preparing dependencies for module: " + module
+                    msg_prep_reqs = "Pre-reqs for %s have been installed." % module
                     # if OSTYPE is DEBIAN
                     if ostype == "DEBIAN":
-                        print_status(
-                            "Preparing dependencies for module: " + module)
-
+                        print_status(msg_prep_dpns)
+                        info(msg_prep_dpns)
                         from src.platforms.debian import base_install_modules
                         # grab all the modules we need
                         deb_modules = module_parser(filename, "DEBIAN")
                         base_install_modules(deb_modules)
-                        print_status(
-                            "Pre-reqs for %s have been installed." % (module))
-
+                        print_status(msg_prep_reqs)
+                        info(msg_prep_reqs)
                     # if OSTYPE is ARCHLINUX
                     if ostype == "ARCHLINUX":
-                        print_status(
-                            "Preparing dependencies for module: " + module)
+                        print_status(msg_prep_dpns)
+                        info(msg_prep_dpns)
                         from src.platforms.archlinux import base_install_modules
                         # grab all the modules we need
                         arch_modules = module_parser(filename, "ARCHLINUX")
                         base_install_modules(arch_modules)
-                        print_status(
-                            "Pre-reqs for %s have been installed." % (module))
-
+                        print_status(msg_prep_reqs)
+                        info(msg_prep_reqs)
                     # if OSTYPE is FEDORA
                     if ostype == "FEDORA":
-                        print_status(
-                            "Preparing dependencies for module: " + module)
+                        print_status(msg_prep_dpns)
+                        info(msg_prep_dpns)
                         from src.platforms.fedora import base_install_modules
                         # grab all the modules we need
                         fedora_modules = module_parser(filename, "FEDORA")
                         base_install_modules(fedora_modules)
-                        print_status(
-                            "Pre-reqs for %s have been installed." % (module))
-
+                        print_status(msg_prep_reqs)
+                        info(msg_prep_reqs)
                     # if OSTYPE is OPENBSD
                     if ostype == "OPENBSD":
-                        print_status(
-                            "Preparing dependencies for module: " + module)
+                        print_status(msg_prep_dpns)
+                        info(msg_prep_dpns)
                         from src.platforms.openbsd import base_install_modules
                         # grab all the modules we need
                         openbsd_modules = module_parser(filename, "OPENBSD")
                         base_install_modules(openbsd_modules)
-                        print_status(
-                            "Pre-reqs for %s have been installed." % (module))
+                        print_status(msg_prep_reqs)
+                        info(msg_prep_reqs)
 
-                    print_status(
-                        "Making the appropriate directory structure first")
-                    subprocess.Popen("mkdir -p %s" %
-                                     install_location, shell=True).wait()
-
+                    msg = "Making the appropriate directory structure first"
+                    print_status(msg)
+                    info(msg)
+                    subprocess.Popen("mkdir -p %s" % install_location, shell=True).wait()
                     # if we are using git
                     if install_type.lower() in ["git","gitlab"]:
                         # if there are files in the install_location, we'll update.
                         if os.listdir(install_location):
-                            print_status("Installation already exists, going to git pull then run after commands..")
+                            msg = "Installation already exists, going to git pull then run after commands.."
+                            info(msg)
+                            print_status(msg)
                             if install_type.lower() == "gitlab":
                                 get_password_gitlab()
                                 proc = pexpect.spawn('git -C %s pull' % (install_location))
@@ -520,66 +587,61 @@ def use_module(module, all_trigger):
                                 proc.wait()
                             else:
                                 subprocess.Popen("cd %s;git pull" % (install_location), stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
-                            print_status("Finished updating the tool located in:" + install_location)
+
+                            msg = "Finished updating the tool located in:" + install_location
+                            print_status(msg)
+                            info(msg)
                         else:
-                            print_status("%s was the selected method for installation... Using %s to install." % (install_type.upper(), install_type.upper()))
+                            msg = "%s was the selected method for installation... Using %s to install." % (install_type.upper(), install_type.upper())
+                            print_status(msg)
+                            info(msg)
                             print_status("Installing now.. be patient...")
+                            info("Installing now.. be patient...")
                             if install_type.lower() == "gitlab":
                                 get_password_gitlab()
-                                proc = pexpect.spawn('git clone %s %s' % (repository_location, install_location))
+                                proc = pexpect.spawn('git clone --depth=1 %s %s' % (repository_location, install_location))
+                                log_output()
                                 proc.expect('passphrase')
                                 proc.sendline('%s' % password_gitlab)
                                 proc.expect(pexpect.EOF)
                             else:
-                                subprocess.Popen("git clone %s %s" % (repository_location, install_location), stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
-
-                            print_status("Finished Installing! Enjoy the tool located under: " + install_location)
+                                proc = subprocess.Popen("git clone --depth=1 %s %s" % (repository_location, install_location), stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
+                                log_output()
+                            msg = "Finished Installing! Enjoy the tool located under: " + install_location
+                            info(msg)
+                            print_status(msg)
                         after_commands(filename, install_location)
                         launcher(filename, install_location)
-
                     # if we are using svn
                     if install_type.lower() == "svn":
-                        print_status(
-                            "SVN was the selected method for installation... Using SVN to install.")
+                        print_status("SVN was the selected method for installation... Using SVN to install.")
                         subprocess.Popen("svn co %s %s" % (
                             repository_location, install_location), stderr=subprocess.PIPE, shell=True).wait()
                         print_status(
                             "Finished Installing! Enjoy the tool located under: " + install_location)
                         launcher(filename, install_location)
                         after_commands(filename, install_location)
-
                     # if we are using file
                     if install_type.lower() == "file":
-                        print_status(
-                            "FILE was the selected method for installation... Using curl -o to install.")
+                        print_status("FILE was the selected method for installation... Using curl -o to install.")
                         repository_file = repository_location.split("/")[-1]
                         subprocess.Popen('curl -k -L -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/534.30 (KHTML, like Gecko) Chrome/12.0.742.112 Safari/534.30" -o %s%s %s' % (
                             install_location, repository_file, repository_location), stderr=subprocess.PIPE, shell=True).wait()
-                        print_status(
-                            "Finished Installing! Enjoy the tool located under: " + install_location)
+                        print_status("Finished Installing! Enjoy the tool located under: " + install_location)
                         launcher(filename, install_location)
                         after_commands(filename, install_location)
-
                     # if we are using wget
                     if install_type.lower() == "wget":
-                        print_status(
-                            "WGET was the selected method for installation because it plays better than curl -l with recursive URLs.")
-                        subprocess.Popen(
-                            "cd %s && wget -q %s" % (
-                                install_location, repository_location),
-                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
-                        print_status(
-                            "Finished Installing! Enjoy the tool located under: " + install_location)
+                        print_status("WGET was the selected method for installation because it plays better than curl -l with recursive URLs.")
+                        subprocess.Popen("cd %s && wget -q %s" % (install_location, repository_location), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
+                        print_status("Finished Installing! Enjoy the tool located under: " + install_location)
                         launcher(filename, install_location)
                         after_commands(filename, install_location)
-
                     print_status("Running updatedb to tidy everything up.")
                     subprocess.Popen("updatedb", shell=True).wait()
-
             # if we update all we need to break out until finished
             if int(all_trigger) == 1 or int(all_trigger) == 2:
                 break
-
 # searches in the directory to find a file that references the location
 def find_containing_file(directory, location):
     try:
@@ -593,56 +655,44 @@ def find_containing_file(directory, location):
         print_warning("%s is not managed by PTF"%(location))
         # Didn't find anything, returning None
         return None
-
-
 def handle_prompt(prompt, force=False):
     # specify no commands, if counter increments then a command was found
     base_counter = 0
-
     # main help menu
     if prompt == "?" or prompt == "help":
         show_help_menu()
         base_counter = 1
-
     # if we want to exit out
     if prompt == "quit" or prompt == "exit" or prompt == "back":
         base_counter = 1
         exit_ptf()
         sys.exit()
-
     # if we want to see the modules
     if prompt == "show modules":
         base_counter = 1
         show_module()
-
     # list new modules
     if prompt == "show new modules":
         base_counter = 1
         show_new_modules()
-
     # inside joke
     if prompt == "install sleeves":
         print_error("Scott White? Sleeves? F Sleeves. Scott Rules.")
         base_counter = 1
-
     # search functionality here
     if prompt.startswith("search"):
         base_counter = 1
         search(prompt)
-
     # if we want to use a module
     if prompt.startswith("use"):
         base_counter = 1
         counter = 0
         prompt = prompt.split(" ")
-
         # do a quick sanity check to see if the module is there first
         if "install_update_all" in prompt[1] or "custom_list" in prompt[1]:
             counter = 3
             try:
-                if not force:
-                    install_query = input(
-                        "[*] You are about to install/update everything. Proceed? [yes/no]:")
+                if not force: install_query = input("[*] You are about to install/update everything. Proceed? [yes/no]:")
                 else:
                     print("[*] You are about to install/update everything. Proceed? [yes/no]:yes")
                     install_query = "yes"
@@ -650,14 +700,11 @@ def handle_prompt(prompt, force=False):
                 install_query = "no"
                 print("")
             if install_query.lower() == "yes" or install_query.lower() == "y":
-
                 # do auto update check first
                 auto_update()
-
-                if not "custom_list" in prompt[1]:
-                    modules_path = definepath() + "/" + (prompt[1])[:-18]
-                else:
-                    modules_path = definepath() + "/modules/"
+                if not "custom_list" in prompt[1]: modules_path = definepath() + "/" + (prompt[1])[:-18]
+                # else: modules_path = definepath() + "/modules/"
+                else: modules_path = prompt[1] + ".txt"
                 # base holder for all debian packages
                 deb_modules = ""
                 # base holder for all arch packages
@@ -666,35 +713,37 @@ def handle_prompt(prompt, force=False):
                 fedora_modules = ""
                 # base holder for all openbsd packages
                 openbsd_modules = ""
-
                 # first we install all depends for all applications
-                print_status(
-                    "We are going to first install all prereqs using apt before installing..")
-                print_status(
-                    "Cycling through modules and grabbing requirements...")
-
+                print_status("We are going to first install all prereqs using apt before installing..")
+                print_status("Cycling through modules and grabbing requirements...")
+                # if we install the custom_list tools
+                if "custom_list" in modules_path:
+                    if os.path.isfile(modules_path):
+                        fileopen = open(modules_path).readlines()
+                        for tools in fileopen:
+                            print_status("Installing and/or updating: " + tools.rstrip())
+                            # run the module for install
+                            use_module(tools.rstrip().replace(".py", ""), "1")
+                            time.sleep(0.2)
                 for path, subdirs, files in os.walk(modules_path):
                     for name in files:
-                        if "custom_list" in prompt[1] and name[:-3] not in open(definepath() + "/" + prompt[1] + ".py").read():
-                            break
+                        if "custom_list" in prompt[1] and name[:-4] not in open(definepath() + "/" + prompt[1]  + ".txt").read(): break
                         # join the structure
                         filename = os.path.join(path, name)
-                        # strip un-needed files
+                       # strip un-needed files
                         if not "__init__.py" in filename and not ignore_module(filename) and include_module(filename) and ".py" in filename and not ".pyc" in filename and not ignore_update_all_module(filename):
                             print("!!!***!!!installing deps for module: " + filename)
                             # shorten it up a little bit
-                            filename_short = filename.replace(
-                                os.getcwd() + "/", "")
+                            filename_short = filename.replace(os.getcwd() + "/", "")
                             # update depend modules
                             filename_short = str(filename_short)
                             ostype = profile_os()
-
+                            # DEBIAN
                             if ostype == "DEBIAN":
                                 if not "install_update_all" in filename_short and not "custom_list" in filename:
                                     from src.platforms.debian import base_install_modules
                                     # grab all the modules we need
                                     deb_modules = deb_modules + "," + module_parser(filename_short, "DEBIAN")
-
                             # archlinux
                             if ostype == "ARCHLINUX":
                                 if not "install_update_all" in filename_short and not "custom_list" in filename:
@@ -702,8 +751,7 @@ def handle_prompt(prompt, force=False):
                                     # grab all the modules we need
                                     arch_modules = ""
                                     arch_modules = arch_modules + "," + \
-                                        module_parser(
-                                            filename_short, "ARCHLINUX")
+                                        module_parser(filename_short, "ARCHLINUX")
                             # fedora
                             if ostype == "FEDORA":
                                 if not "install_update_all" in filename_short and not "custom_list" in filename:
@@ -717,48 +765,39 @@ def handle_prompt(prompt, force=False):
                                     from src.platforms.openbsd import base_install_modules
                                     # grab all the modules we need
                                     openbsd_modules = openbsd_modules + "," + \
-                                        module_parser(
-                                            filename_short, "OPENBSD")
-
+                                        module_parser(filename_short, "OPENBSD")
                 # install all of the packages at once
                 ostype = profile_os()
-
                 if ostype == "DEBIAN":
                     deb_modules = deb_modules.replace(",", " ")
                     if deb_modules != "":
                         base_install_modules(deb_modules)
                     print_status("Finished updating depends for modules.")
-
                 if ostype == "ARCHLINUX":
                     arch_modules = arch_modules.replace(",", " ")
                     if arch_modules != "":
                         base_install_modules(arch_modules)
                     print_status("Finished updating depends for modules.")
-
                 if ostype == "FEDORA":
                     fedora_modules = fedora_modules.replace(",", " ")
                     if fedora_modules != "":
                         base_install_modules(fedora_modules)
                     print_status("Finished updating depends for modules.")
-
                 if ostype == "OPENBSD":
                     openbsd_modules = openbsd_modules.replace(",", " ")
                     if openbsd_modules != "":
                         base_install_modules(openbsd_modules)
                     print_status("Finished updating depends for modules.")
-
                 for path, subdirs, files in os.walk(modules_path):
                     for name in files:
-                        if "custom_list" in prompt[1] and name[:-3] not in open(definepath() + "/" + prompt[1] + ".py").read():
-                            break
+                        if "custom_list" in prompt[1] and name[:-4] not in open(definepath() + "/" + prompt[1] + ".txt").read(): break
                         # join the structure
                         filename = os.path.join(path, name)
                         if not "__init__.py" in filename and not ignore_module(filename) and include_module(filename) and ".py" in filename and not ".pyc" in filename and not "install_update_all" in filename and not "__init__" in filename and not "custom_list" in filename:
                             # strip un-needed files
                             # if not "__init__.py" in filename and not ignore_module(filename):
                             # shorten it up a little bit
-                            filename_short = filename.replace(
-                                os.getcwd() + "/", "")
+                            filename_short = filename.replace(os.getcwd() + "/", "")
                             filename_short = filename_short.replace(".py", "")
                             # check if empty directory - if so purge it before
                             # anything else
@@ -768,7 +807,6 @@ def handle_prompt(prompt, force=False):
                             use_module(filename_short, "1")
                             # sleep a sec
                             time.sleep(0.2)
-
                 # clear the screen
                 os.system("clear")
                 print ("\n")
@@ -782,13 +820,9 @@ def handle_prompt(prompt, force=False):
                     """|  _  | (_| | (__|   <  | |_| | | |  __/ |  __/| | (_| | | | |  __/ |_ """)
                 print (
                     """|_| |_|\__,_|\___|_|\_\  \__|_| |_|\___| |_|   |_|\__,_|_| |_|\___|\__|\n\n""")
-                print_status(
-                    "All finished installing/and or updating.. All shiny again.\n")
-
+                print_status("All finished installing/and or updating.. All shiny again.\n")
             else:
-                print_status(
-                    "Alright boss. Not installing right now. Tell me when. I want that shiny. I want it now.")
-
+                print_status("Alright boss. Not installing right now. Tell me when. I want that shiny. I want it now.")
         if "update_installed" in prompt[1]:
             counter = 3
             base_install = check_config("BASE_INSTALL_PATH=")
@@ -807,10 +841,8 @@ def handle_prompt(prompt, force=False):
                             if not 'None' in module:
                                 print(("Updating %s") % module)
                                 use_module(module, 2)
-
-        if os.path.isfile(definepath() + "/" + prompt[1] + ".py"):
+        if os.path.isfile(discover_module_filename(prompt[1])):
             counter = 1
-
         if counter == 1:
             while 1:
                 try:
@@ -819,28 +851,41 @@ def handle_prompt(prompt, force=False):
                         prompt = module.split(" ")
                     else: break
                 except Exception: break
-
         if counter == 0:
             print_error("Module name was not found, try retyping it again.")
+
+    # show installed modules
+    if "show installed"  in prompt:
+        print_status("Printing out all of the installed programs through The PenTesters Framework")
+        for root, dirs, files in os.walk(check_config("BASE_INSTALL_PATH="), topdown=False):
+            for name in dirs:
+                if root.count(os.sep) >= 3: del dirs[:]
+                elif root.count(os.sep) == 1: del dirs[:]
+                else: print(os.path.join(root, name))
+        base_counter = 1
+
 
     # if blanks are used
     if prompt == "":
         base_counter = 1
 
     if base_counter == 0:
-        print_warning(
-            "Command was not found, try help or ? for more information.")
+        print_warning("Command was not found, try help or ? for more information.")
 
 # start the main loop
 def mainloop():
-
+    has_run = 0
     while 1:
+        has_run += 1
         # set title
         set_title("The PenTesters Framework (PTF) v%s" % grab_version)
-
+        if not has_run >= 2:
+            print_info("[!] Logs are now outputed into the directory of cloned ptf under name 'ptf-output.log'")
         try:
             prompt = input(bcolors.BOLD + "ptf" + bcolors.ENDC + "> ")
-        except EOFError:
+            info(prompt)
+        except EOFError as eof:
+            error(eof)
             prompt = "quit"
             print("")
         handle_prompt(prompt)

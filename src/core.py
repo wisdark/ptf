@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 ################################
 # Core functions for PTF
 ################################
@@ -11,13 +12,14 @@ import platform
 import urllib.request
 import sys
 
+# Import PTF internal logging module
+#from src.ptflogger import info, error, debug, log
+
 # tab completion
 def complete(text, state):
-    a = (glob.glob(text + '*') + [None])[state].replace("__init__.py", "").replace(".py", "").replace("LICENSE", "").replace(
-        "README.md", "").replace("config", "").replace("ptf", "").replace("readme", "").replace("src", "").replace("         ", "") + "/"
+    a = (glob.glob(text + '*') + [None])[state].replace("__init__.py", "").replace(".py", "").replace("LICENSE", "").replace("README.md", "").replace("config", "").replace("ptf", "").replace("readme", "").replace("src", "").replace("         ", "").replace(".txt","") + "/"
     a = a.replace("//", "/")
-    if os.path.isfile(a[:-1] + ".py"):
-        return a[:-1]
+    if os.path.isfile(a[:-1] + ".py") or os.path.isfile(a[:-1] + ".txt"): return a[:-1]
     else:
         return a
 
@@ -115,34 +117,31 @@ def count_modules():
     return counter
 
 # version information
-grab_version = "2.3.7"
+grab_version = "2.4.8"
 
 # banner
 banner = bcolors.RED + r"""
-
-                     ______  __ __    ___
-                    |      T|  T  T  /  _]
-                    |      ||  l  | /  [_
-                    l_j  l_j|  _  |Y    _]
-                      |  |  |  |  ||   [_
-                      |  |  |  |  ||     T
-                      l__j  l__j__jl_____j
-
- ____     ___  ____   ______    ___   _____ ______    ___  ____    _____
-|    \   /  _]|    \ |      T  /  _] / ___/|      T  /  _]|    \  / ___/
-|  o  ) /  [_ |  _  Y|      | /  [_ (   \_ |      | /  [_ |  D  )(   \_
-|   _/ Y    _]|  |  |l_j  l_jY    _] \__  Tl_j  l_jY    _]|    /  \__  T
-|  |   |   [_ |  |  |  |  |  |   [_  /  \ |  |  |  |   [_ |    \  /  \ |
-|  |   |     T|  |  |  |  |  |     T \    |  |  |  |     T|  .  Y \    |
-l__j   l_____jl__j__j  l__j  l_____j  \___j  l__j  l_____jl__j\_j  \___j
-
- _____  ____    ____  ___ ___    ___  __    __   ___   ____   __  _
-|     ||    \  /    T|   T   T  /  _]|  T__T  T /   \ |    \ |  l/ ]
-|   __j|  D  )Y  o  || _   _ | /  [_ |  |  |  |Y     Y|  D  )|  ' /
-|  l_  |    / |     ||  \_/  |Y    _]|  |  |  ||  O  ||    / |    \
-|   _] |    \ |  _  ||   |   ||   [_ l  `  '  !|     ||    \ |     Y
-|  T   |  .  Y|  |  ||   |   ||     T \      / l     !|  .  Y|  .  |
-l__j   l__j\_jl__j__jl___j___jl_____j  \_/\_/   \___/ l__j\_jl__j\_j
+                ████████╗██╗  ██╗███████╗                                     
+                ╚══██╔══╝██║  ██║██╔════╝                                     
+                   ██║   ███████║█████╗                                       
+                   ██║   ██╔══██║██╔══╝                                       
+                   ██║   ██║  ██║███████╗                                     
+                   ╚═╝   ╚═╝  ╚═╝╚══════╝                                     
+                                                                              
+██████╗ ███████╗███╗   ██╗████████╗███████╗███████╗████████╗███████╗██████╗   
+██╔══██╗██╔════╝████╗  ██║╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝██╔══██╗  
+██████╔╝█████╗  ██╔██╗ ██║   ██║   █████╗  ███████╗   ██║   █████╗  ██████╔╝  
+██╔═══╝ ██╔══╝  ██║╚██╗██║   ██║   ██╔══╝  ╚════██║   ██║   ██╔══╝  ██╔══██╗  
+██║     ███████╗██║ ╚████║   ██║   ███████╗███████║   ██║   ███████╗██║  ██║  
+╚═╝     ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝  
+                                                                              
+███████╗██████╗  █████╗ ███╗   ███╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗
+██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝
+█████╗  ██████╔╝███████║██╔████╔██║█████╗  ██║ █╗ ██║██║   ██║██████╔╝█████╔╝ 
+██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝  ██║███╗██║██║   ██║██╔══██╗██╔═██╗ 
+██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗
+╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
+                                                                              
 """
 
 banner += bcolors.ENDC + """
@@ -153,8 +152,8 @@ banner += bcolors.ENDC + """Framework\n\n"""
 banner += """        		   """ + bcolors.backBlue + \
     """Version: %s""" % (grab_version) + bcolors.ENDC + "\n"
 
-banner += bcolors.YELLOW + bcolors.BOLD + """		    Codename: """ + \
-    bcolors.BLUE + """All the Tools""" + "\n"
+banner += bcolors.YELLOW + bcolors.BOLD + """		        Codename: """ + \
+    bcolors.BLUE + """Toolsmith""" + "\n"
 
 banner += """		         """ + bcolors.ENDC + bcolors.backRed + \
     """Red Team Approved""" + bcolors.ENDC + "\n"
@@ -389,15 +388,17 @@ def launcher(filename, install_location):
                     filewrite.close()
                     subprocess.Popen("chmod +x /usr/local/bin/%s" %
                                      (launchers), shell=True).wait()
-                    print_status("Created automatic launcher, you can run the tool from anywhere by typing: " + launchers)
-
+                    msg = "Created automatic launcher, you can run the tool from anywhere by typing: " + launchers
+                    print_status(msg)
+                    with open("ptf-output.log","a") as ee:
+                        ee.write(msg+"\n")
             # just need to do this once
             if base_launcher == 1:
                 break
 
 # search functionality here
 def search(term):
-    term = term.replace("search ", "")
+    term = term.replace("search ", "").lower() # Make the text in search lower for case sensitive
     module_files = []
     if "update" in term or "install" in term:
         module_files.append("modules/install_update_all")
@@ -413,7 +414,7 @@ def search(term):
                             module_files.append(os.path.join(dirpath, x))
 
                         if not term in path:
-                            data = open(path, "r").readlines()
+                            data = open(path, "r", encoding="utf-8").readlines()
                             # normally just searched entire file, but we don't
                             # want to search # lines
                             for line in data:
@@ -431,6 +432,8 @@ def search(term):
 
     else:
         print_warning("Search found no results.")
+    
+    return True
 
 
 # auto update packages
@@ -453,11 +456,9 @@ def auto_update():
 
 # check if a blank directory exists
 def check_blank_dir(path):
-
     if os.path.isdir(path):
         if os.listdir(path) == []:
-            print_status(
-                "Detected an empty folder, purging and re-checking out...")
+            print_status("Detected an empty folder, purging and re-checking out...")
             subprocess.Popen("rm -rf %s" % (path), shell=True).wait()
 
         # we put a second one in there in case the path was removed from above

@@ -1,4 +1,91 @@
 ~~~~~~~~~~~~~~~~~
+version 2.4.8
+~~~~~~~~~~~~~~~~~
+
+* simplify the nmap install script to native OS installation
+* fix root directories listing in show installed
+* fix ruler module
+* update pcredz module depends
+
+~~~~~~~~~~~~~~~~~
+version 2.4.7
+~~~~~~~~~~~~~~~~~
+
+* add new flag option to "show installed" to show all installed applications through PTF
+
+~~~~~~~~~~~~~~~~~
+version 2.4.6
+~~~~~~~~~~~~~~~~~
+
+* fix an issue with PTF prompts when using a module and typing show options
+
+~~~~~~~~~~~~~~~~~
+version 2.4.5
+~~~~~~~~~~~~~~~~~
+
+* added empire3
+
+~~~~~~~~~~~~~~~~~
+version 2.4.4
+~~~~~~~~~~~~~~~~~
+
+* revert new banner due to compatibility issues
+* fix search functionality in DEBIAN (thanks Mubix)
+
+~~~~~~~~~~~~~~~~~
+2.4.3
+~~~~~~~~~~~~~~~~~
+
+* add evil-winrm
+* add donut
+* new ascii art from realagentwhite (PR)
+* fix output log file to ptf.log (realagentwhite PR)
+* fix autorecon launcher (realagentwhite PR)
+* add a no banner option by specifying -nb or --no-banner (realagentwhite PR)
+* fix use without category name (realagentwhite PR) 
+
+~~~~~~~~~~~~~~~~~
+2.4.2
+~~~~~~~~~~~~~~~~~
+
+* major bug fix in custom lists, now works properly
+* fix burp launcher
+
+~~~~~~~~~~~~~~~~~
+version 2.4.1
+~~~~~~~~~~~~~~~~~
+
+* reduce size in github requests by using depth of 1 (PR)
+* always show lowercase search results regardless of case (PR)
+* fix dotnet11 after commands for install
+* fix Kismet to the right github repository
+
+~~~~~~~~~~~~~~~~~
+version 2.4
+~~~~~~~~~~~~~~~~~
+
+* add default-http-hunter
+* add wifite2
+* remove wifilite1
+* fix custom lists from not working
+* add wifipumpkin3
+* update crackmapexec to python3
+
+~~~~~~~~~~~~~~~~~
+version 2.3.9
+~~~~~~~~~~~~~~~~~
+
+* fix EyeWitness install
+* add amass
+* add msolspray
+
+~~~~~~~~~~~~~~~~~
+version 2.3.8
+~~~~~~~~~~~~~~~~~
+
+* update spiderfoot installation for python3
+
+~~~~~~~~~~~~~~~~~
 2.3.7
 ~~~~~~~~~~~~~~~~~
 

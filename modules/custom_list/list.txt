@@ -1,4 +1,3 @@
-burp
-metasploit
-zaproxy
-nmap
+modules/exploitation/metasploit
+modules/vulnerability-analysis/nmap
+modules/post-exploitation/unicorn
